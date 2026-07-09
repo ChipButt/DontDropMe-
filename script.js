@@ -1,10 +1,10 @@
 const CONFIG = {
   startingDiameter: 64,
   minDiameter: 4,
-  gravity: 680,
-  maxVelocity: 1100,
-  minImpulse: 240,
-  maxImpulse: 920,
+  gravity: 520,
+  maxVelocity: 1000,
+  minImpulse: 280,
+  maxImpulse: 960,
   shrinkEveryHits: 3,
   shrinkMultiplier: 0.92,
   difficultySpeedMultiplier: 1.04,
@@ -16,9 +16,16 @@ const CONFIG = {
 
   ballStartXRatio: 0.5,
   ballStartYRatio: 0.28,
-  centerTapDeadzoneRatio: 0.2,
-  upwardImpulseBonus: 120,
-  downwardImpulseMultiplier: 0.32,
+  centerTapDeadzoneRatio: 0.28,
+  tapAssistPadding: 24,
+  tapAssistMultiplier: 1.8,
+  topTapZoneRatio: 0.38,
+  upwardImpulseBonus: 180,
+  nonTopUpwardLift: 320,
+  downwardImpulseMultiplier: 0.22,
+  rapidTapGraceSeconds: 0.22,
+  rapidTapAssistRadius: 88,
+  rapidTapMinBelowCenterRatio: 0.1,
   maxDeltaSeconds: 0.032,
   maxDevicePixelRatio: 2,
   floorInset: 18,
@@ -105,6 +112,7 @@ let nextPowerupAt = 0;
 let powerup = null;
 let floatingLabels = [];
 let backgroundDots = [];
+let recentTapAssist = null;
 
 const ball = {
   x: 0,
@@ -159,6 +167,7 @@ function resetGameValues() {
   currentGravity = CONFIG.gravity;
   difficultyFactor = 1;
   floatingLabels = [];
+  recentTapAssist = null;
   powerup = null;
   smallestDiameterReached = CONFIG.startingDiameter;
   setBallDiameter(CONFIG.startingDiameter);
@@ -373,29 +382,45 @@ function handlePointerEnd(event) {
 }
 
 function handleBallTap(tapX, tapY) {
-  const dx = ball.x - tapX;
-  const dy = ball.y - tapY;
-  const distance = Math.hypot(dx, dy);
+  let dx = ball.x - tapX;
+  let dy = ball.y - tapY;
+  let distance = Math.hypot(dx, dy);
+  const effectiveTapRadius = Math.max(
+    ball.radius + CONFIG.tapAssistPadding,
+    ball.radius * CONFIG.tapAssistMultiplier
+  );
+  const rapidAssistActive = isRapidTapAssistActive(tapX, tapY);
 
-  if (distance > ball.radius) {
-    return;
+  if (distance > effectiveTapRadius) {
+    if (!rapidAssistActive) {
+      return;
+    }
+
+    dx = clamp(ball.x - tapX, -ball.radius, ball.radius);
+    dy = -ball.radius;
+    distance = Math.hypot(dx, dy);
   }
 
   const deadzone = ball.radius * CONFIG.centerTapDeadzoneRatio;
-  const distanceRatio = clamp(distance / ball.radius, 0, 1);
+  const distanceRatio = clamp(distance / effectiveTapRadius, 0, 1);
   const impulseStrength = lerp(CONFIG.minImpulse, CONFIG.maxImpulse, distanceRatio);
+  const isTopTap = tapY < ball.y - ball.radius * CONFIG.topTapZoneRatio;
 
   // The impulse direction comes from the tap point to the ball centre.
   // Near-centre taps get a controlled upward nudge so normal play is forgiving.
   const dirX = distance <= deadzone ? 0 : dx / distance;
   const dirY = distance <= deadzone ? -1 : dy / distance;
   const impulseX = dirX * impulseStrength;
-  let impulseY = dirY * impulseStrength;
+  let impulseY;
+
+  if (isTopTap) {
+    impulseY = Math.max(0, dirY * impulseStrength) * CONFIG.downwardImpulseMultiplier;
+  } else {
+    impulseY = Math.min(0, dirY * impulseStrength) - CONFIG.nonTopUpwardLift;
+  }
 
   if (impulseY < 0) {
     impulseY -= CONFIG.upwardImpulseBonus;
-  } else if (impulseY > 0) {
-    impulseY *= CONFIG.downwardImpulseMultiplier;
   }
 
   // Impulses add to existing velocity, preserving full 360-degree momentum.
@@ -407,8 +432,21 @@ function handleBallTap(tapX, tapY) {
   ball.squashAngle = Math.atan2(impulseY, impulseX);
 
   if (impulseY < 0) {
+    recentTapAssist = { x: tapX, y: tapY, time: elapsedSeconds };
     handleSuccessfulUpwardHit();
   }
+}
+
+function isRapidTapAssistActive(tapX, tapY) {
+  if (!recentTapAssist) {
+    return false;
+  }
+
+  const age = elapsedSeconds - recentTapAssist.time;
+  const tapDistance = Math.hypot(tapX - recentTapAssist.x, tapY - recentTapAssist.y);
+  const isBelowBall = tapY >= ball.y + ball.radius * CONFIG.rapidTapMinBelowCenterRatio;
+
+  return age <= CONFIG.rapidTapGraceSeconds && tapDistance <= CONFIG.rapidTapAssistRadius && isBelowBall;
 }
 
 function handleSuccessfulUpwardHit() {

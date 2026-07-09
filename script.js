@@ -1,10 +1,10 @@
 const CONFIG = {
   startingDiameter: 64,
   minDiameter: 4,
-  gravity: 980,
-  maxVelocity: 1300,
-  minImpulse: 180,
-  maxImpulse: 780,
+  gravity: 680,
+  maxVelocity: 1100,
+  minImpulse: 240,
+  maxImpulse: 920,
   shrinkEveryHits: 3,
   shrinkMultiplier: 0.92,
   difficultySpeedMultiplier: 1.04,
@@ -15,8 +15,10 @@ const CONFIG = {
   baseScore: 100,
 
   ballStartXRatio: 0.5,
-  ballStartYRatio: 0.34,
-  centerTapDeadzoneRatio: 0.035,
+  ballStartYRatio: 0.28,
+  centerTapDeadzoneRatio: 0.2,
+  upwardImpulseBonus: 120,
+  downwardImpulseMultiplier: 0.32,
   maxDeltaSeconds: 0.032,
   maxDevicePixelRatio: 2,
   floorInset: 18,
@@ -383,12 +385,18 @@ function handleBallTap(tapX, tapY) {
   const distanceRatio = clamp(distance / ball.radius, 0, 1);
   const impulseStrength = lerp(CONFIG.minImpulse, CONFIG.maxImpulse, distanceRatio);
 
-  // The impulse direction is the exact vector from the tap point to the ball centre.
-  // A true centre tap has no usable vector, so it gets a small controlled upward nudge.
+  // The impulse direction comes from the tap point to the ball centre.
+  // Near-centre taps get a controlled upward nudge so normal play is forgiving.
   const dirX = distance <= deadzone ? 0 : dx / distance;
   const dirY = distance <= deadzone ? -1 : dy / distance;
   const impulseX = dirX * impulseStrength;
-  const impulseY = dirY * impulseStrength;
+  let impulseY = dirY * impulseStrength;
+
+  if (impulseY < 0) {
+    impulseY -= CONFIG.upwardImpulseBonus;
+  } else if (impulseY > 0) {
+    impulseY *= CONFIG.downwardImpulseMultiplier;
+  }
 
   // Impulses add to existing velocity, preserving full 360-degree momentum.
   ball.vx += impulseX;

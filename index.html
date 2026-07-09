@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#07111f">
     <title>Tap Sphere</title>
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="style.css?v=20260709-2">
-    <script src="script.js?v=20260709-2" defer></script>
+    <link rel="stylesheet" href="style.css?v=20260709-3">
+    <script src="script.js?v=20260709-3" defer></script>
   </head>
   <body>
     <main class="game-shell" aria-label="Tap Sphere arcade game">
@@ -33,9 +33,32 @@
       </section>
 
       <section id="startScreen" class="screen" aria-label="Start screen">
-        <div class="screen__content">
+        <div class="screen__content screen__content--start">
           <h1>Tap Sphere</h1>
-          <p>Tap to Start</p>
+          <p class="screen__lead">Keep at least one ball in the air.</p>
+
+          <ol class="start-steps" aria-label="How to play">
+            <li>Tap the ball before it reaches the floor.</li>
+            <li>Hit below or beside the ball to send it upward.</li>
+            <li>Only taps on the top push the ball downward.</li>
+          </ol>
+
+          <div class="powerup-guide" aria-label="Powerups">
+            <div class="powerup-guide__item">
+              <span class="powerup-chip powerup-chip--slow">SLOW</span>
+              <span>First appears after 3 hits and lowers gravity.</span>
+            </div>
+            <div class="powerup-guide__item">
+              <span class="powerup-chip powerup-chip--grow">+</span>
+              <span>Makes active balls bigger, up to the starting size.</span>
+            </div>
+            <div class="powerup-guide__item">
+              <span class="powerup-chip powerup-chip--multi">x3</span>
+              <span>Every 75 hits, split one ball into three smaller balls.</span>
+            </div>
+          </div>
+
+          <p class="tap-start">Tap powerups once. Tap anywhere to start.</p>
         </div>
       </section>
 

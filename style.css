@@ -126,6 +126,14 @@ body {
   width: min(100%, 360px);
 }
 
+.screen__content--start {
+  width: min(100%, 390px);
+  max-height: calc(100dvh - 48px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 4px 0;
+}
+
 .screen__content--panel {
   padding: 24px;
   border: 1px solid rgba(177, 218, 255, 0.2);
@@ -148,6 +156,10 @@ h1 {
   text-shadow: 0 10px 36px rgba(13, 96, 255, 0.36);
 }
 
+.screen__content--start h1 {
+  font-size: clamp(2.5rem, 13vw, 4.8rem);
+}
+
 h2 {
   font-size: clamp(2rem, 9vw, 3.2rem);
   line-height: 0.95;
@@ -159,6 +171,105 @@ h2 {
   color: rgba(231, 244, 255, 0.8);
   font-size: clamp(1rem, 4.8vw, 1.3rem);
   font-weight: 800;
+}
+
+.screen .screen__lead {
+  margin-top: 14px;
+  font-size: clamp(0.98rem, 4.5vw, 1.22rem);
+}
+
+.start-steps {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  text-align: left;
+}
+
+.start-steps li {
+  position: relative;
+  min-height: 36px;
+  padding: 9px 10px 9px 42px;
+  border: 1px solid rgba(169, 214, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(5, 13, 29, 0.46);
+  color: rgba(236, 247, 255, 0.88);
+  font-size: clamp(0.82rem, 3.5vw, 0.94rem);
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.start-steps li::before {
+  counter-increment: step;
+  content: counter(step);
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  background: #79d8ff;
+  color: #04111f;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.powerup-guide {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  text-align: left;
+}
+
+.powerup-guide__item {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid rgba(169, 214, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(5, 13, 29, 0.46);
+  color: rgba(236, 247, 255, 0.86);
+  font-size: clamp(0.78rem, 3.3vw, 0.9rem);
+  font-weight: 740;
+  line-height: 1.22;
+}
+
+.powerup-chip {
+  display: grid;
+  width: 46px;
+  min-height: 26px;
+  place-items: center;
+  border-radius: 999px;
+  color: #03111d;
+  font-size: 0.68rem;
+  font-weight: 950;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+}
+
+.powerup-chip--slow {
+  background: linear-gradient(180deg, #b7f7ff 0%, #39c9ff 100%);
+}
+
+.powerup-chip--grow {
+  background: linear-gradient(180deg, #87ffc0 0%, #19dd8c 100%);
+  font-size: 1rem;
+}
+
+.powerup-chip--multi {
+  background: linear-gradient(180deg, #ffd4ff 0%, #f061ff 100%);
+}
+
+.screen .tap-start {
+  margin-top: 16px;
+  color: #ffffff;
+  font-size: clamp(0.92rem, 4vw, 1.08rem);
 }
 
 .results {

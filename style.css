@@ -1,0 +1,214 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #050914;
+  color: #f6fbff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(54, 150, 255, 0.18), transparent 32rem),
+    linear-gradient(180deg, #0d1830 0%, #050914 68%, #03050b 100%);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.game-shell {
+  position: relative;
+  width: min(100vw, 520px);
+  height: 100dvh;
+  max-height: 920px;
+  overflow: hidden;
+  background: #07111f;
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.46);
+  isolation: isolate;
+}
+
+@media (min-aspect-ratio: 3 / 4) {
+  .game-shell {
+    width: min(100vw, calc(100dvh * 9 / 16), 520px);
+    height: min(100dvh, 920px);
+    border-radius: 8px;
+  }
+}
+
+#gameCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.hud {
+  position: absolute;
+  z-index: 2;
+  top: max(12px, env(safe-area-inset-top));
+  left: 12px;
+  right: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  pointer-events: none;
+}
+
+.stat {
+  min-width: 0;
+  padding: 8px 7px;
+  border: 1px solid rgba(173, 214, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(5, 13, 29, 0.58);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.stat__label,
+.stat__value {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stat__label {
+  margin-bottom: 2px;
+  color: rgba(214, 231, 255, 0.68);
+  font-size: clamp(0.58rem, 2.5vw, 0.72rem);
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.stat__value {
+  color: #ffffff;
+  font-size: clamp(0.82rem, 3.8vw, 1.08rem);
+  font-weight: 850;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.screen {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: #ffffff;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(40, 151, 255, 0.22), transparent 15rem),
+    linear-gradient(180deg, rgba(4, 9, 19, 0.18), rgba(4, 9, 19, 0.68));
+  transition: opacity 160ms ease, visibility 160ms ease;
+}
+
+.screen--hidden {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.screen__content {
+  width: min(100%, 360px);
+}
+
+.screen__content--panel {
+  padding: 24px;
+  border: 1px solid rgba(177, 218, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(7, 16, 34, 0.82);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(3rem, 15vw, 5.4rem);
+  line-height: 0.9;
+  letter-spacing: 0;
+  text-shadow: 0 10px 36px rgba(13, 96, 255, 0.36);
+}
+
+h2 {
+  font-size: clamp(2rem, 9vw, 3.2rem);
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.screen p {
+  margin-top: 18px;
+  color: rgba(231, 244, 255, 0.8);
+  font-size: clamp(1rem, 4.8vw, 1.3rem);
+  font-weight: 800;
+}
+
+.results {
+  display: grid;
+  gap: 10px;
+  margin: 22px 0;
+}
+
+.results div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(177, 218, 255, 0.14);
+}
+
+.results dt,
+.results dd {
+  margin: 0;
+}
+
+.results dt {
+  color: rgba(218, 235, 255, 0.72);
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.results dd {
+  color: #ffffff;
+  font-size: 1.04rem;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+
+.restart-button {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #54f2a4 0%, #13b976 100%);
+  color: #04120c;
+  cursor: pointer;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 900;
+  box-shadow: 0 14px 34px rgba(19, 185, 118, 0.3);
+}
+
+.restart-button:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.92);
+  outline-offset: 3px;
+}

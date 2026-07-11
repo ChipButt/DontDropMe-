@@ -6,11 +6,11 @@
     <meta name="theme-color" content="#07111f">
     <title>Dont Drop Me</title>
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="style.css?v=20260711-1">
-    <script src="levels.js?v=20260711-1" defer></script>
-    <script src="storage.js?v=20260711-1" defer></script>
-    <script src="cosmetics.js?v=20260711-1" defer></script>
-    <script src="script.js?v=20260711-1" defer></script>
+    <link rel="stylesheet" href="style.css?v=20260712-1">
+    <script src="levels.js?v=20260712-1" defer></script>
+    <script src="storage.js?v=20260712-1" defer></script>
+    <script src="cosmetics.js?v=20260712-1" defer></script>
+    <script src="script.js?v=20260712-1" defer></script>
   </head>
   <body>
     <main class="game-shell" aria-label="Dont Drop Me mobile arcade game">
@@ -66,7 +66,7 @@
         <div class="screen__content screen__content--wide">
           <div class="screen-header">
             <div>
-              <p class="eyebrow">Candy path</p>
+              <p class="eyebrow">Winding climb</p>
               <h2>Level Map</h2>
             </div>
             <button class="icon-button" type="button" data-action="home" aria-label="Home">x</button>
@@ -92,10 +92,18 @@
           <dl id="resultsStats" class="results"></dl>
           <div class="menu-actions">
             <button id="retryButton" class="primary-button" type="button">Retry</button>
-            <button id="nextLevelButton" class="secondary-button" type="button">Next Level</button>
+            <button id="nextLevelButton" class="secondary-button" type="button">Continue</button>
             <button class="secondary-button" type="button" data-action="map">Level Map</button>
             <button class="text-button" type="button" data-action="home">Home</button>
           </div>
+        </div>
+      </section>
+
+      <section id="unlockCutsceneScreen" class="screen screen--hidden" aria-label="Shop unlock cutscene">
+        <div class="screen__content unlock-cutscene-panel">
+          <p class="eyebrow">Shop drop</p>
+          <h2 id="unlockCutsceneTitle">New Skins</h2>
+          <div id="unlockCutsceneGrid" class="unlock-cutscene-grid"></div>
         </div>
       </section>
 

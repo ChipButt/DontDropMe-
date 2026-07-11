@@ -43,7 +43,7 @@
     migrated.highestUnlockedLevel = clampLevel(Number(migrated.highestUnlockedLevel) || 1);
     migrated.totalCoins = Math.max(0, Number(migrated.totalCoins) || 0);
     applyCurrentStarThresholds(migrated);
-    migrated.shopUnlocked = Boolean(migrated.shopUnlocked || Number(migrated.bestStars[10]) >= 1);
+    migrated.shopUnlocked = Boolean(migrated.shopUnlocked || migrated.highestUnlockedLevel >= 10 || Number(migrated.bestStars[10]) >= 1);
 
     if (!migrated.ownedBallSkins.includes(migrated.equippedBallSkin)) {
       migrated.equippedBallSkin = "default";
@@ -140,7 +140,7 @@
       save.highestUnlockedLevel = Math.max(save.highestUnlockedLevel, level.id + 1);
     }
 
-    if (Number(save.bestStars[10]) >= 1 || (level.id === 10 && stars >= 1)) {
+    if (save.highestUnlockedLevel >= 10 || Number(save.bestStars[10]) >= 1 || (level.id === 10 && stars >= 1)) {
       save.shopUnlocked = true;
     }
 
@@ -154,7 +154,7 @@
   function buyItem(save, kind, item) {
     const ownedKey = kind === "ball" ? "ownedBallSkins" : "ownedBackgrounds";
 
-    if (save[ownedKey].includes(item.id) || save.totalCoins < item.cost) {
+    if (save[ownedKey].includes(item.id) || save.highestUnlockedLevel < item.unlockLevel || save.totalCoins < item.cost) {
       return false;
     }
 

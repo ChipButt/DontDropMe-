@@ -92,6 +92,8 @@ const CONFIG = {
   labelFontMin: 12,
   labelFontRatio: 0.34,
   labelFontMax: 22,
+  unlockCutsceneIntroMs: 180,
+  unlockCutsceneDurationMs: 2400,
 
   shadowHeightRangeRatio: 0.68,
   shadowMinAlpha: 0.045,
@@ -149,6 +151,14 @@ const POWERUP_STYLES = {
   }
 };
 
+const MAP_WORLD_THEMES = Object.freeze([
+  { id: 5, title: "Portal Peak", range: "41-50" },
+  { id: 4, title: "Phase Caverns", range: "31-40" },
+  { id: 3, title: "Split Skies", range: "21-30" },
+  { id: 2, title: "Gravity Garden", range: "11-20" },
+  { id: 1, title: "Bounce Fields", range: "1-10" }
+]);
+
 const canvas = document.querySelector("#gameCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -167,6 +177,7 @@ const screens = {
   map: document.querySelector("#mapScreen"),
   tutorial: document.querySelector("#tutorialScreen"),
   results: document.querySelector("#resultsScreen"),
+  unlock: document.querySelector("#unlockCutsceneScreen"),
   shop: document.querySelector("#shopScreen"),
   help: document.querySelector("#helpScreen")
 };
@@ -187,6 +198,8 @@ const resultsStars = document.querySelector("#resultsStars");
 const resultsStats = document.querySelector("#resultsStats");
 const retryButton = document.querySelector("#retryButton");
 const nextLevelButton = document.querySelector("#nextLevelButton");
+const unlockCutsceneTitle = document.querySelector("#unlockCutsceneTitle");
+const unlockCutsceneGrid = document.querySelector("#unlockCutsceneGrid");
 const shopLockMessage = document.querySelector("#shopLockMessage");
 const shopContent = document.querySelector("#shopContent");
 
@@ -202,6 +215,8 @@ let selectedLevelId = saveData.highestUnlockedLevel;
 let currentLevel = LEVELS[0];
 let pendingTutorialLevel = null;
 let lastResult = null;
+let pendingShopUnlocks = [];
+let unlockCutsceneTimer = null;
 
 let score = 0;
 let successfulHits = 0;
@@ -286,16 +301,20 @@ function renderHome() {
   showScreen("home");
 }
 
-function renderLevelMap() {
+function renderLevelMap(options = {}) {
   const currentLevelId = clamp(saveData.highestUnlockedLevel, 1, LEVELS.length);
-  const trailSteps = LEVELS.map((level, index) => {
-    const state = level.id < currentLevelId ? "visited" : level.id === currentLevelId ? "current" : "locked";
-    const rowEndClass = level.id % 5 === 0 ? " map-trail-step--row-end" : "";
-
-    return `<span class="map-trail-step map-trail-step--${state}${rowEndClass}" style="--trail-index: ${index};"></span>`;
-  }).join("");
+  const mapPoints = LEVELS.map((level) => getMapPoint(level.id));
+  const fullRoutePoints = createRoutePointString(mapPoints);
+  const visitedRoutePoints = createRoutePointString(mapPoints.slice(0, currentLevelId));
+  const worldBands = MAP_WORLD_THEMES.map((world) => `
+    <section class="map-world map-world--${world.id}" style="--world-id: ${world.id};">
+      <span class="map-world__title">${world.title}</span>
+      <span class="map-world__range">${world.range}</span>
+    </section>
+  `).join("");
 
   const levelNodes = LEVELS.map((level) => {
+    const point = mapPoints[level.id - 1];
     const unlocked = level.id <= saveData.highestUnlockedLevel;
     const stars = StorageManager.getBestStars(saveData, level.id);
     const isCurrent = level.id === currentLevelId;
@@ -307,7 +326,13 @@ function renderLevelMap() {
     const starText = stars > 0 ? "★".repeat(stars) : "";
 
     return `
-      <button class="${classes}" type="button" data-level-id="${level.id}" ${unlocked ? "" : "disabled"}>
+      <button
+        class="${classes}"
+        type="button"
+        data-level-id="${level.id}"
+        style="--node-x: ${point.x}; --node-y: ${point.y}; --node-delay: ${level.id};"
+        ${unlocked ? "" : "disabled"}
+      >
         ${isCurrent ? `
           <span class="map-player-piece" aria-hidden="true">
             <span class="map-player-piece__shadow"></span>
@@ -322,17 +347,58 @@ function renderLevelMap() {
 
   levelMap.innerHTML = `
     <div class="map-scene">
+      <div class="map-worlds" aria-hidden="true">${worldBands}</div>
+      <svg class="map-route-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <polyline class="map-route map-route--base" points="${fullRoutePoints}"></polyline>
+        <polyline class="map-route map-route--progress" points="${visitedRoutePoints}"></polyline>
+      </svg>
       <div class="map-scenery" aria-hidden="true">
         <span class="map-cloud map-cloud--one"></span>
         <span class="map-cloud map-cloud--two"></span>
-        <span class="map-hill map-hill--back"></span>
-        <span class="map-hill map-hill--front"></span>
+        <span class="map-gem map-gem--one"></span>
+        <span class="map-gem map-gem--two"></span>
+        <span class="map-portal map-portal--one"></span>
+        <span class="map-portal map-portal--two"></span>
       </div>
-      <div class="map-trail" aria-hidden="true">${trailSteps}</div>
       <div class="map-path">${levelNodes}</div>
     </div>
   `;
   showScreen("map");
+  focusCurrentMapNode(currentLevelId);
+
+  if (options.playUnlockCutscene && pendingShopUnlocks.length > 0) {
+    const cutsceneItems = pendingShopUnlocks;
+    pendingShopUnlocks = [];
+    window.setTimeout(() => playShopUnlockCutscene(cutsceneItems), CONFIG.unlockCutsceneIntroMs);
+  }
+}
+
+function getMapPoint(levelId) {
+  const index = levelId - 1;
+  const progress = index / (LEVELS.length - 1);
+  const primaryWave = Math.sin(index * 0.72) * 26;
+  const secondaryWave = Math.sin(index * 0.19 + 1.4) * 8;
+  const x = clamp(50 + primaryWave + secondaryWave, 17, 83);
+  const y = 96 - progress * 91;
+
+  return {
+    x: Number(x.toFixed(2)),
+    y: Number(y.toFixed(2))
+  };
+}
+
+function createRoutePointString(points) {
+  return points.map((point) => `${point.x},${point.y}`).join(" ");
+}
+
+function focusCurrentMapNode(currentLevelId) {
+  window.requestAnimationFrame(() => {
+    const node = levelMap.querySelector(`[data-level-id="${currentLevelId}"]`);
+
+    if (node) {
+      node.scrollIntoView({ block: "center", inline: "center" });
+    }
+  });
 }
 
 function renderTutorial(level) {
@@ -363,7 +429,8 @@ function renderResults(result) {
     ["Total coins", formatNumber(saveData.totalCoins)]
   ]);
 
-  nextLevelButton.disabled = !(nextLevel && nextLevel.id <= saveData.highestUnlockedLevel);
+  nextLevelButton.disabled = false;
+  nextLevelButton.textContent = nextLevel && nextLevel.id <= saveData.highestUnlockedLevel ? "Continue" : "Level Map";
   lastResult = result;
   showScreen("results");
 }
@@ -379,9 +446,10 @@ function createResultsRows(rows) {
 
 function renderShop() {
   shopCoins.textContent = formatNumber(saveData.totalCoins);
+  shopLockMessage.hidden = saveData.shopUnlocked;
   shopLockMessage.textContent = saveData.shopUnlocked
-    ? "Cosmetics change visuals only. They never alter physics, score, or level difficulty."
-    : "Pass Level 10 with at least 1 star to unlock coins and the cosmetic shop.";
+    ? ""
+    : "Reach Level 10 to unlock the cosmetic shop.";
 
   shopContent.innerHTML = saveData.shopUnlocked ? `
     ${renderShopSection("Ball Skins", "ball", COSMETICS.BALL_SKINS)}
@@ -393,7 +461,7 @@ function renderShop() {
 function renderShopSection(title, kind, items) {
   const ownedKey = kind === "ball" ? "ownedBallSkins" : "ownedBackgrounds";
   const equippedKey = kind === "ball" ? "equippedBallSkin" : "equippedBackground";
-  const visibleItems = items.filter((item) => !item.hidden || saveData.highestUnlockedLevel >= item.unlockLevel);
+  const visibleItems = items;
 
   return `
     <section class="shop-section">
@@ -418,21 +486,94 @@ function renderShopItem(kind, item, ownedKey, equippedKey) {
         ? `Level ${item.unlockLevel}`
         : `${formatNumber(item.cost)} coins`;
   const action = owned ? "equip" : "buy";
+  const classes = [
+    "shop-item",
+    `shop-item--${kind}`,
+    `shop-item--${item.id}`,
+    owned ? "shop-item--owned" : "shop-item--unowned",
+    equipped ? "shop-item--equipped" : "",
+    levelLocked ? "shop-item--level-locked" : "",
+    canBuy ? "shop-item--can-buy" : ""
+  ].filter(Boolean).join(" ");
+  const ariaLabel = `${item.name}. ${actionLabel}. Cost ${formatNumber(item.cost)} coins.`;
 
   return `
-    <article class="shop-item ${equipped ? "shop-item--equipped" : ""}">
-      <span class="shop-item__name">${item.name}</span>
-      <span class="shop-item__meta">${item.cost === 0 ? "Owned" : `${formatNumber(item.cost)} coins`}</span>
-      <button
-        class="shop-item__action"
-        type="button"
-        data-shop-kind="${kind}"
-        data-shop-action="${action}"
-        data-shop-id="${item.id}"
-        ${equipped || levelLocked || (!owned && !canBuy) ? "disabled" : ""}
-      >${actionLabel}</button>
-    </article>
+    <button
+      class="${classes}"
+      type="button"
+      data-shop-kind="${kind}"
+      data-shop-action="${action}"
+      data-shop-id="${item.id}"
+      aria-label="${ariaLabel}"
+      ${equipped || levelLocked || (!owned && !canBuy) ? "disabled" : ""}
+    >
+      ${renderShopPreview(kind, item)}
+      <span class="shop-item__cost">${formatNumber(item.cost)}</span>
+      ${levelLocked ? `<span class="shop-item__lock" aria-hidden="true"></span>` : ""}
+      ${equipped ? `<span class="shop-item__equipped" aria-hidden="true">✓</span>` : ""}
+    </button>
   `;
+}
+
+function renderShopPreview(kind, item) {
+  if (kind === "background") {
+    return `
+      <span
+        class="shop-preview background-preview"
+        style="--preview-top: ${item.top}; --preview-mid: ${item.mid}; --preview-bottom: ${item.bottom}; --preview-accent: ${item.accent};"
+        aria-hidden="true"
+      ></span>
+    `;
+  }
+
+  return `<span class="shop-preview skin-preview skin-preview--${item.id}" aria-hidden="true"></span>`;
+}
+
+function getNewlyUnlockedShopItems(previousHighestLevel, currentHighestLevel, currentShopUnlocked) {
+  if (!currentShopUnlocked || previousHighestLevel >= currentHighestLevel) {
+    return [];
+  }
+
+  return COSMETICS.BALL_SKINS
+    .filter((item) => !item.hidden || currentHighestLevel >= item.unlockLevel)
+    .filter((item) => item.unlockLevel > previousHighestLevel && item.unlockLevel <= currentHighestLevel)
+    .map((item) => ({ ...item, kind: "ball" }));
+}
+
+function continueFromResults() {
+  renderLevelMap({ playUnlockCutscene: true });
+}
+
+function playShopUnlockCutscene(items) {
+  if (items.length === 0) {
+    return;
+  }
+
+  if (unlockCutsceneTimer) {
+    window.clearTimeout(unlockCutsceneTimer);
+  }
+
+  unlockCutsceneTitle.textContent = items.length === 1 ? "New Skin" : "New Skins";
+  unlockCutsceneGrid.innerHTML = items.map((item, index) => `
+    <article class="unlock-item unlock-item--${item.id}" style="--unlock-index: ${index};">
+      ${renderShopPreview("ball", item)}
+      <span class="shop-item__cost">${formatNumber(item.cost)}</span>
+      <span class="unlock-item__lock" aria-hidden="true"></span>
+    </article>
+  `).join("");
+
+  screens.unlock.classList.remove("unlock-cutscene--open");
+  showScreen("unlock");
+
+  window.requestAnimationFrame(() => {
+    screens.unlock.classList.add("unlock-cutscene--open");
+  });
+
+  unlockCutsceneTimer = window.setTimeout(() => {
+    screens.unlock.classList.remove("unlock-cutscene--open");
+    unlockCutsceneTimer = null;
+    renderLevelMap();
+  }, CONFIG.unlockCutsceneDurationMs);
 }
 
 function requestStartLevel(levelId) {
@@ -1145,6 +1286,7 @@ function endLevelRun() {
     return;
   }
 
+  const previousHighestLevel = saveData.highestUnlockedLevel;
   const previousBest = StorageManager.getBestScore(saveData, currentLevel.id);
   const stars = getStarsForScore(currentLevel, score);
   const coinsEarned = getCoinsEarned(currentLevel, score, stars);
@@ -1160,6 +1302,7 @@ function endLevelRun() {
 
   StorageManager.updateLevelResult(saveData, currentLevel, score, stars, coinsEarned);
   saveData = StorageManager.loadSave();
+  pendingShopUnlocks = getNewlyUnlockedShopItems(previousHighestLevel, saveData.highestUnlockedLevel, saveData.shopUnlocked);
   selectedLevelId = Math.min(saveData.highestUnlockedLevel, currentLevel.id + (stars >= 1 ? 1 : 0));
   renderResults(result);
 }
@@ -1960,7 +2103,7 @@ tutorialStartButton.addEventListener("click", () => {
   beginLevelRun(pendingTutorialLevel);
 });
 retryButton.addEventListener("click", () => requestStartLevel(lastResult ? lastResult.level.id : selectedLevelId));
-nextLevelButton.addEventListener("click", () => requestStartLevel(lastResult ? lastResult.level.id + 1 : saveData.highestUnlockedLevel));
+nextLevelButton.addEventListener("click", continueFromResults);
 
 resizeCanvas();
 currentLevel = LEVELS[0];

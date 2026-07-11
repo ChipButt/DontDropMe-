@@ -287,23 +287,51 @@ function renderHome() {
 }
 
 function renderLevelMap() {
-  levelMap.innerHTML = LEVELS.map((level) => {
+  const currentLevelId = clamp(saveData.highestUnlockedLevel, 1, LEVELS.length);
+  const trailSteps = LEVELS.map((level, index) => {
+    const state = level.id < currentLevelId ? "visited" : level.id === currentLevelId ? "current" : "locked";
+    const rowEndClass = level.id % 5 === 0 ? " map-trail-step--row-end" : "";
+
+    return `<span class="map-trail-step map-trail-step--${state}${rowEndClass}" style="--trail-index: ${index};"></span>`;
+  }).join("");
+
+  const levelNodes = LEVELS.map((level) => {
     const unlocked = level.id <= saveData.highestUnlockedLevel;
     const stars = StorageManager.getBestStars(saveData, level.id);
+    const isCurrent = level.id === currentLevelId;
     const classes = [
       "level-node",
       unlocked ? "level-node--unlocked" : "level-node--locked",
-      level.id === saveData.highestUnlockedLevel ? "level-node--current" : ""
+      isCurrent ? "level-node--current" : ""
     ].filter(Boolean).join(" ");
     const starText = stars > 0 ? "★".repeat(stars) : "";
 
     return `
       <button class="${classes}" type="button" data-level-id="${level.id}" ${unlocked ? "" : "disabled"}>
-        <span>${level.id}</span>
-        <span class="level-stars">${starText || (unlocked ? "" : "LOCK")}</span>
+        ${isCurrent ? `
+          <span class="map-player-piece" aria-hidden="true">
+            <span class="map-player-piece__shadow"></span>
+            <span class="map-player-piece__ball"></span>
+          </span>
+        ` : ""}
+        <span class="level-node__number">${level.id}</span>
+        <span class="level-stars">${starText}</span>
       </button>
     `;
   }).join("");
+
+  levelMap.innerHTML = `
+    <div class="map-scene">
+      <div class="map-scenery" aria-hidden="true">
+        <span class="map-cloud map-cloud--one"></span>
+        <span class="map-cloud map-cloud--two"></span>
+        <span class="map-hill map-hill--back"></span>
+        <span class="map-hill map-hill--front"></span>
+      </div>
+      <div class="map-trail" aria-hidden="true">${trailSteps}</div>
+      <div class="map-path">${levelNodes}</div>
+    </div>
+  `;
   showScreen("map");
 }
 

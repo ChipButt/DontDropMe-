@@ -42,6 +42,7 @@
     migrated.version = SAVE_VERSION;
     migrated.highestUnlockedLevel = clampLevel(Number(migrated.highestUnlockedLevel) || 1);
     migrated.totalCoins = Math.max(0, Number(migrated.totalCoins) || 0);
+    applyCurrentStarThresholds(migrated);
     migrated.shopUnlocked = Boolean(migrated.shopUnlocked || Number(migrated.bestStars[10]) >= 1);
 
     if (!migrated.ownedBallSkins.includes(migrated.equippedBallSkin)) {
@@ -53,6 +54,42 @@
     }
 
     return migrated;
+  }
+
+  function applyCurrentStarThresholds(save) {
+    if (!Array.isArray(window.LEVELS)) {
+      return;
+    }
+
+    window.LEVELS.forEach((level) => {
+      const earnedStars = getStarsForScore(level, getBestScore(save, level.id));
+
+      if (earnedStars > getBestStars(save, level.id)) {
+        save.bestStars[String(level.id)] = earnedStars;
+      }
+
+      if (earnedStars >= 1 && level.id < 50) {
+        save.highestUnlockedLevel = Math.max(save.highestUnlockedLevel, level.id + 1);
+      }
+    });
+
+    save.highestUnlockedLevel = clampLevel(save.highestUnlockedLevel);
+  }
+
+  function getStarsForScore(level, score) {
+    if (!level || score < level.star1Score) {
+      return 0;
+    }
+
+    if (score >= level.star3Score) {
+      return 3;
+    }
+
+    if (score >= level.star2Score) {
+      return 2;
+    }
+
+    return 1;
   }
 
   function normalizeOwned(value, fallback) {

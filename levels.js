@@ -286,21 +286,27 @@
   }
 
   function getStarThresholds(id) {
-    if (id === 1) {
-      return [2000, 7500, 20000];
+    const earlyThresholds = [
+      [200, 600, 1200],
+      [300, 900, 1700],
+      [450, 1200, 2400],
+      [600, 1600, 3200],
+      [800, 2100, 4300],
+      [1050, 2800, 5600],
+      [1350, 3600, 7200],
+      [1700, 4500, 9000],
+      [2100, 5400, 10800],
+      [2600, 6500, 13000]
+    ];
+
+    if (id <= earlyThresholds.length) {
+      return earlyThresholds[id - 1];
     }
 
-    if (id === 2) {
-      return [3000, 10000, 25000];
-    }
-
-    if (id === 3) {
-      return [4000, 12000, 30000];
-    }
-
-    const star1 = roundToNearest(3600 + id * 1450 + id * id * 58, 250);
-    const star2 = roundToNearest(star1 * (2.55 + id * 0.012), 500);
-    const star3 = roundToNearest(star1 * (5.85 + id * 0.026), 1000);
+    const postTen = id - earlyThresholds.length;
+    const star1 = roundToNearest(2600 + postTen * 780 + postTen * postTen * 45, 250);
+    const star2 = roundToNearest(star1 * (2.42 + postTen * 0.018), 500);
+    const star3 = roundToNearest(star1 * (4.85 + postTen * 0.035), 1000);
     return [star1, star2, star3];
   }
 
